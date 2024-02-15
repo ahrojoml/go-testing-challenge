@@ -4,6 +4,7 @@ import (
 	"app/internal"
 	"app/internal/handler"
 	"app/internal/repository"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -54,6 +55,12 @@ func TestGet(t *testing.T) {
 			queryErr:   internal.ErrProductNotFound,
 			expectCode: http.StatusNotFound,
 			expectBody: `{"status":"Not Found","message":"product not found"}`,
+		}, {
+			name:       "internal error",
+			id:         "1",
+			queryErr:   errors.New("internal error"),
+			expectCode: http.StatusInternalServerError,
+			expectBody: `{"status":"Internal Server Error","message":"internal error"}`,
 		}, {
 			name: "success",
 			id:   "1",
