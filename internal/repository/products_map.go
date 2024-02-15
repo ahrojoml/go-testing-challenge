@@ -22,19 +22,25 @@ type ProductsMap struct {
 }
 
 // SearchProducts returns a list of products that match the query.
-func (r *ProductsMap) SearchProducts(query internal.ProductQuery) (p map[int]internal.Product, err error) {
-	p = make(map[int]internal.Product)
+func (r *ProductsMap) SearchProducts(query internal.ProductQuery) (map[int]internal.Product, error) {
+	if query.Id <= 0 {
+		return nil, internal.ErrInvalidQuery
+	}
+
+	p := make(map[int]internal.Product)
 
 	// search the products
 	for k, v := range r.db {
 		// check if each query field is set
-		if query.Id > 0 && query.Id != v.Id {
-			continue
+		if query.Id == v.Id {
+			p[k] = v
+			break
 		}
-
-		// add the product to the result
-		p[k] = v
 	}
 
-	return
+	if len(p) == 0 {
+		return nil, internal.ErrProductNotFound
+	}
+
+	return p, nil
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"app/internal"
 	"app/platform/web/response"
+	"errors"
 	"net/http"
 	"strconv"
 )
@@ -33,21 +34,31 @@ func (h *ProductsDefault) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// request
 		// - query
-		var query internal.ProductQuery
-		if r.URL.Query().Has("id") {
-			var err error
-			query.Id, err = strconv.Atoi(r.URL.Query().Get("id"))
-			if err != nil {
-				response.Error(w, http.StatusBadRequest, "invalid id")
-				return
-			}
+
+		if !r.URL.Query().Has("id") {
+			response.Error(w, http.StatusBadRequest, "no id provided")
+			return
 		}
 
+		var query internal.ProductQuery
+		var err error
+		query.Id, err = strconv.Atoi(r.URL.Query().Get("id"))
+		if err != nil {
+			response.Error(w, http.StatusBadRequest, "invalid id")
+			return
+		}
 		// process
 		// - search products
 		p, err := h.rp.SearchProducts(query)
 		if err != nil {
-			response.Error(w, http.StatusInternalServerError, "internal error")
+			switch {
+			case errors.Is(err, internal.ErrInvalidQuery):
+				response.Error(w, http.StatusBadRequest, "invalid query")
+			case errors.Is(err, internal.ErrProductNotFound):
+				response.Error(w, http.StatusNotFound, "product not found")
+			default:
+				response.Error(w, http.StatusInternalServerError, "internal error")
+			}
 			return
 		}
 
